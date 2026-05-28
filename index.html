@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#ffb27a">
+    <title>Сегодня вечером? 🍣</title>
+    <style>
+        :root {
+            --green: #3ec46d;
+            --green-dark: #2fa658;
+            --gray: #b9b3ad;
+            --gray-dark: #9a948e;
+            --ink: #4a3a30;
+            --accent: #ff7a59;
+            --card: #fffaf4;
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            color: var(--ink);
+            background: linear-gradient(160deg, #fff1e0 0%, #ffe0cf 45%, #ffd1c2 100%);
+            overflow: hidden;
+            -webkit-text-size-adjust: 100%;
+        }
+
+        .screen {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 28px 22px calc(28px + env(safe-area-inset-bottom));
+            text-align: center;
+            opacity: 0;
+            transform: translateY(26px);
+            pointer-events: none;
+            transition: opacity .55s ease, transform .55s ease;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .screen.active {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+
+        h1 {
+            font-size: clamp(28px, 8.5vw, 46px);
+            line-height: 1.12;
+            margin: 0 0 16px;
+            font-weight: 800;
+            letter-spacing: -.5px;
+            text-wrap: balance;
+        }
+
+        .sub {
+            font-size: clamp(15px, 4.4vw, 19px);
+            line-height: 1.45;
+            margin: 0 0 34px;
+            max-width: 30ch;
+            color: #7a655a;
+        }
+
+        .emoji-row {
+            font-size: 40px;
+            margin-bottom: 14px;
+        }
+
+        .btn {
+            border: none;
+            border-radius: 18px;
+            padding: 18px 30px;
+            font-size: 20px;
+            font-weight: 700;
+            font-family: inherit;
+            color: #fff;
+            cursor: pointer;
+            transition: transform .18s ease, box-shadow .2s ease, background .2s ease;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, .12);
+            touch-action: manipulation;
+            user-select: none;
+        }
+
+        .btn:active {
+            transform: scale(.96);
+        }
+
+        .btns {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        #yesBtn {
+            background: linear-gradient(135deg, #46d27a, var(--green));
+            transform: scale(var(--yes-scale, 1));
+            transform-origin: center;
+        }
+
+        #yesBtn:active {
+            transform: scale(calc(var(--yes-scale, 1) * .96));
+        }
+
+        #noBtn {
+            background: linear-gradient(135deg, #c7c1bb, var(--gray));
+        }
+
+        #noBtn.flying {
+            position: fixed;
+            margin: 0;
+            z-index: 50;
+            transition: left .28s cubic-bezier(.34, 1.56, .64, 1), top .28s cubic-bezier(.34, 1.56, .64, 1), transform .18s ease;
+        }
+
+        /* ---- screen 2 ---- */
+        .panel {
+            background: var(--card);
+            border-radius: 24px;
+            padding: 22px 20px;
+            width: 100%;
+            max-width: 440px;
+            box-shadow: 0 14px 40px rgba(120, 70, 40, .16);
+            margin-top: 8px;
+        }
+
+        .rolls {
+            list-style: none;
+            margin: 0 0 4px;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .roll {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            background: #fff4ea;
+            border: 2px solid transparent;
+            border-radius: 14px;
+            padding: 14px 16px;
+            font-size: 17px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: border-color .15s ease, background .15s ease, transform .1s ease;
+            text-align: left;
+        }
+
+        .roll:active {
+            transform: scale(.99);
+        }
+
+        .roll.checked {
+            border-color: var(--accent);
+            background: #ffe9df;
+        }
+
+        .roll input {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 24px;
+            height: 24px;
+            flex: none;
+            border: 2px solid #d8c6b8;
+            border-radius: 8px;
+            margin: 0;
+            display: grid;
+            place-content: center;
+            background: #fff;
+            transition: background .15s ease, border-color .15s ease;
+        }
+
+        .roll input:checked {
+            background: var(--accent);
+            border-color: var(--accent);
+        }
+
+        .roll input:checked::after {
+            content: "✓";
+            color: #fff;
+            font-size: 15px;
+            font-weight: 800;
+        }
+
+        .order {
+            margin: 18px 2px 20px;
+            font-size: 15px;
+            line-height: 1.4;
+            color: #7a655a;
+            min-height: 1.4em;
+        }
+
+        .order b {
+            color: var(--accent);
+        }
+
+        /* ---- screen 3 ---- */
+        .heart {
+            font-size: 60px;
+            margin-bottom: 8px;
+            animation: beat 1.1s ease-in-out infinite;
+        }
+
+        @keyframes beat {
+            0%, 100% {
+                transform: scale(1);
+            }
+            25% {
+                transform: scale(1.18);
+            }
+            40% {
+                transform: scale(1);
+            }
+        }
+
+        #waBtn {
+            background: linear-gradient(135deg, #3ddc84, #25d366);
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            margin-top: 10px;
+        }
+
+        .final-set {
+            margin: 18px 0 26px;
+            font-size: 16px;
+            color: #7a655a;
+            line-height: 1.45;
+            max-width: 32ch;
+        }
+
+        .final-set b {
+            color: var(--accent);
+        }
+
+        #confetti {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 40;
+        }
+    </style>
+</head>
+<body>
+
+<canvas id="confetti"></canvas>
+
+<!-- ===== Экран 1 ===== -->
+<section class="screen active" id="screen1">
+    <div class="emoji-row">🍣🌙</div>
+    <h1>Придёшь ко мне сегодня вечером?</h1>
+    <p class="sub">Доставка суши, нормальная музыка, хорошая компания. Никаких подвохов (почти)</p>
+    <div class="btns">
+        <button class="btn" id="yesBtn">Да</button>
+        <button class="btn" id="noBtn">Нет</button>
+    </div>
+</section>
+
+<!-- ===== Экран 2 ===== -->
+<section class="screen" id="screen2">
+    <h1>Отличный выбор 🎉<br>Теперь собери свой сет</h1>
+    <div class="panel">
+        <ul class="rolls" id="rolls"></ul>
+        <p class="order" id="order">Твой заказ: пока пусто 🤔</p>
+        <button class="btn" id="doneBtn" style="background:linear-gradient(135deg,#ff9466,var(--accent));width:100%;">
+            Готово
+        </button>
+    </div>
+</section>
+
+<!-- ===== Экран 3 ===== -->
+<section class="screen" id="screen3">
+    <div class="heart">❤️</div>
+    <h1>Жду тебя сегодня вечером</h1>
+    <p class="final-set" id="finalSet"></p>
+    <a class="btn" id="waBtn" href="#" target="_blank" rel="noopener">
+        <span>💬</span><span>Написать в WhatsApp</span>
+    </a>
+</section>
+
+<script>
+    // вставить номер в формате 77011234567
+    const PHONE_NUMBER = "77479747723";
+
+    /* ---------- переключение экранов ---------- */
+    function showScreen(id) {
+        document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+        document.getElementById(id).classList.add("active");
+    }
+
+    /* ---------- Экран 1: кнопка «Нет» ---------- */
+    const noBtn = document.getElementById("noBtn");
+    const yesBtn = document.getElementById("yesBtn");
+    const labels = ["Нет", "Точно нет?", "А суши?", "Подумай ещё", "Ну пожалуйста", "Последний шанс"];
+    let attempts = 0;
+
+    function dodge(e) {
+        if (e) {
+            e.preventDefault();
+        }      // гасим клик/тап, чтобы «Нет» не считалось нажатием
+        attempts++;
+
+        // «Да» растёт с каждой попыткой
+        yesBtn.style.setProperty("--yes-scale", (1 + attempts * 0.16).toFixed(2));
+
+        if (attempts >= labels.length) {    // после 6-й попытки «Нет» исчезает
+            noBtn.style.transition = "opacity .3s ease, transform .3s ease";
+            noBtn.style.opacity = "0";
+            noBtn.style.transform = "scale(0)";
+            setTimeout(() => noBtn.remove(), 320);
+            return;
+        }
+
+        noBtn.textContent = labels[attempts];
+
+        // телепорт в случайную точку экрана, не вылезая за края
+        const w = noBtn.offsetWidth;
+        const h = noBtn.offsetHeight;
+        const pad = 8;
+        const maxX = Math.max(pad, window.innerWidth - w - pad);
+        const maxY = Math.max(pad, window.innerHeight - h - pad);
+        const x = Math.random() * (maxX - pad) + pad;
+        const y = Math.random() * (maxY - pad) + pad;
+
+        noBtn.classList.add("flying");
+        noBtn.style.left = x + "px";
+        noBtn.style.top = y + "px";
+    }
+
+    // и тач, и мышь
+    noBtn.addEventListener("touchstart", dodge, {passive: false});
+    noBtn.addEventListener("mouseenter", dodge);
+    noBtn.addEventListener("mousedown", dodge);
+    noBtn.addEventListener("click", dodge);
+
+    // если экран повернули/изменили — не дать кнопке остаться за краем
+    window.addEventListener("resize", () => {
+        if (!noBtn.classList.contains("flying") || !noBtn.isConnected) return;
+        const w = noBtn.offsetWidth, h = noBtn.offsetHeight, pad = 8;
+        let x = parseFloat(noBtn.style.left) || 0, y = parseFloat(noBtn.style.top) || 0;
+        x = Math.min(x, window.innerWidth - w - pad);
+        y = Math.min(y, window.innerHeight - h - pad);
+        noBtn.style.left = Math.max(pad, x) + "px";
+        noBtn.style.top = Math.max(pad, y) + "px";
+    });
+
+    yesBtn.addEventListener("click", () => {
+        showScreen("screen2");
+        launchConfetti();
+    });
+
+    /* ---------- Экран 2: выбор роллов ---------- */
+    const ROLLS = ["Филадельфия", "Калифорния", "Запечённые", "Унаги маки", "Темпура", "Острый лосось", "Дракон", "Сяке маки"];
+    const rollsEl = document.getElementById("rolls");
+    const orderEl = document.getElementById("order");
+
+    ROLLS.forEach((name, i) => {
+        const li = document.createElement("li");
+        li.className = "roll";
+        li.innerHTML = `<input type="checkbox" value="${name}" id="r${i}"><span>${name}</span>`;
+        const input = li.querySelector("input");
+        li.addEventListener("click", (ev) => {
+            if (ev.target !== input) {
+                input.checked = !input.checked;
+            }
+            li.classList.toggle("checked", input.checked);
+            updateOrder();
+        });
+        rollsEl.appendChild(li);
+    });
+
+    function selectedRolls() {
+        return [...rollsEl.querySelectorAll("input:checked")].map(i => i.value);
+    }
+
+    function updateOrder() {
+        const sel = selectedRolls();
+        orderEl.innerHTML = sel.length
+            ? "Твой заказ: <b>" + sel.join(", ") + "</b>"
+            : "Твой заказ: пока пусто 🤔";
+    }
+
+    document.getElementById("doneBtn").addEventListener("click", () => {
+        const sel = selectedRolls();
+        const setText = sel.length ? sel.join(", ") : "выбор за тобой 😉";
+
+        document.getElementById("finalSet").innerHTML =
+            sel.length ? "Твой сет: <b>" + sel.join(", ") + "</b>" : "Сет выберем на месте 😉";
+
+        const msg = `Я согласна! Мой сет: ${setText}. Сегодня вечером 😋`;
+        document.getElementById("waBtn").href =
+            `https://wa.me/${PHONE_NUMBER}?text=${encodeURIComponent(msg)}`;
+
+        showScreen("screen3");
+        launchConfetti();
+    });
+
+    /* ---------- Конфетти на canvas ---------- */
+    const canvas = document.getElementById("confetti");
+    const ctx = canvas.getContext("2d");
+    let particles = [], confettiRAF = null, confettiUntil = 0;
+    const COLORS = ["#ff7a59", "#3ec46d", "#ffd166", "#ff5d8f", "#5bc0eb", "#fff"];
+
+    function sizeCanvas() {
+        canvas.width = window.innerWidth * devicePixelRatio;
+        canvas.height = window.innerHeight * devicePixelRatio;
+        ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+    }
+
+    window.addEventListener("resize", sizeCanvas);
+    sizeCanvas();
+
+    function launchConfetti() {
+        const W = window.innerWidth;
+        for (let i = 0; i < 140; i++) {
+            particles.push({
+                x: Math.random() * W,
+                y: -20 - Math.random() * window.innerHeight * 0.4,
+                r: 5 + Math.random() * 7,
+                c: COLORS[(Math.random() * COLORS.length) | 0],
+                vx: (Math.random() - 0.5) * 2.4,
+                vy: 2 + Math.random() * 3.5,
+                rot: Math.random() * Math.PI,
+                vr: (Math.random() - 0.5) * 0.3
+            });
+        }
+        confettiUntil = performance.now() + 3500;
+        if (!confettiRAF) confettiRAF = requestAnimationFrame(stepConfetti);
+    }
+
+    function stepConfetti(now) {
+        ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+        const stillSpawning = now < confettiUntil;
+        particles.forEach(p => {
+            p.x += p.vx;
+            p.y += p.vy;
+            p.vy += 0.04;
+            p.rot += p.vr;
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            ctx.rotate(p.rot);
+            ctx.fillStyle = p.c;
+            ctx.fillRect(-p.r / 2, -p.r / 2, p.r, p.r * 0.6);
+            ctx.restore();
+        });
+        particles = particles.filter(p => p.y < window.innerHeight + 30);
+        if (particles.length || stillSpawning) {
+            confettiRAF = requestAnimationFrame(stepConfetti);
+        } else {
+            ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+            confettiRAF = null;
+        }
+    }
+</script>
+</body>
+</html>
